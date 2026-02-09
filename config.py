@@ -41,4 +41,5 @@ DEFAULT_COMMAND_ACCESS = {
     "nuke": "admin_only",
     "weeklysummary": "public",
     "rss-channel": "admin_only",
+    "rss-fetch": "admin_only",
 }
