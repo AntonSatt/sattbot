@@ -27,6 +27,9 @@ DEFAULT_SPAM_MUTE_SECS = 60
 DEFAULT_SCAN_LIMIT = 1000
 DEFAULT_NUKE_DAYS = 60
 
+# RSS feed
+METACURATE_RSS_URL = "https://metacurate.io/briefs/daily/latest/rss"
+
 # Command default access levels
 DEFAULT_COMMAND_ACCESS = {
     "help": "public",
@@ -36,4 +39,6 @@ DEFAULT_COMMAND_ACCESS = {
     "topchatter": "public",
     "inactive": "admin_only",
     "nuke": "admin_only",
+    "weeklysummary": "public",
+    "rss-channel": "admin_only",
 }

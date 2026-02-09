@@ -157,3 +157,82 @@ class Database:
             "DELETE FROM guild_settings WHERE guild_id = ?", (guild_id,)
         )
         await self.db.commit()
+
+    # ── RSS feed ─────────────────────────────────────────────────────
+
+    async def get_rss_channel(self, guild_id: int) -> int | None:
+        async with self.db.execute(
+            "SELECT rss_channel_id FROM rss_guild_config WHERE guild_id = ?",
+            (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if row is None:
+                return None
+            return row[0]
+
+    async def set_rss_channel(self, guild_id: int, channel_id: int | None) -> None:
+        await self.db.execute(
+            "INSERT INTO rss_guild_config (guild_id, rss_channel_id) "
+            "VALUES (?, ?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET rss_channel_id = excluded.rss_channel_id",
+            (guild_id, channel_id),
+        )
+        await self.db.commit()
+
+    async def get_rss_guilds(self) -> list[tuple[int, int]]:
+        """Return all (guild_id, rss_channel_id) pairs with a configured channel."""
+        async with self.db.execute(
+            "SELECT guild_id, rss_channel_id FROM rss_guild_config "
+            "WHERE rss_channel_id IS NOT NULL",
+        ) as cur:
+            return await cur.fetchall()
+
+    async def store_rss_items(
+        self, guild_id: int, items: list[dict]
+    ) -> int:
+        """Store RSS feed items. Returns the number of new items inserted."""
+        count = 0
+        for item in items:
+            # Skip duplicates based on link within the same guild
+            async with self.db.execute(
+                "SELECT 1 FROM rss_feed_items WHERE guild_id = ? AND link = ?",
+                (guild_id, item["link"]),
+            ) as cur:
+                if await cur.fetchone():
+                    continue
+            await self.db.execute(
+                "INSERT INTO rss_feed_items (guild_id, title, link, description, published_at) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (
+                    guild_id,
+                    item.get("title", ""),
+                    item["link"],
+                    item.get("description", ""),
+                    item.get("published_at", ""),
+                ),
+            )
+            count += 1
+        await self.db.commit()
+        return count
+
+    async def get_weekly_rss_items(self, guild_id: int) -> list[dict]:
+        """Return RSS items fetched in the last 7 days for a guild."""
+        async with self.db.execute(
+            "SELECT title, link, description, published_at, fetched_at "
+            "FROM rss_feed_items "
+            "WHERE guild_id = ? AND fetched_at >= datetime('now', '-7 days') "
+            "ORDER BY fetched_at DESC",
+            (guild_id,),
+        ) as cur:
+            rows = await cur.fetchall()
+            cols = [d[0] for d in cur.description]
+            return [dict(zip(cols, row)) for row in rows]
+
+    async def delete_old_rss_items(self, days: int = 30) -> int:
+        """Delete RSS items older than the given number of days. Returns count."""
+        cur = await self.db.execute(
+            "DELETE FROM rss_feed_items WHERE fetched_at < datetime('now', ?)",
+            (f"-{days} days",),
+        )
+        await self.db.commit()
+        return cur.rowcount
