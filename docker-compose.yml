@@ -1,0 +1,12 @@
+services:
+  sattbot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - bot-data:/app/data
+    environment:
+      - DATABASE_PATH=/app/data/sattbot.db
+
+volumes:
+  bot-data:
