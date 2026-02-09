@@ -5,6 +5,7 @@ A modular Discord bot with per-server configurable permissions, slash commands, 
 ## Features
 
 - **Slash commands** — `/ping`, `/help`, `/meme`, `/roastme`, `/topchatter`, `/inactive`, `/nuke`
+- **Weekly RSS summaries** — daily fetch from [Metacurate.io](https://metacurate.io/briefs/daily/latest/rss), AI-powered weekly digest via OpenRouter
 - **Per-server permissions** — 3-tier system (public / admin-only / restricted by role)
 - **Interactive setup wizard** — `/setup` walks admins through configuration
 - **Anti-spam** — automatic muting when message rate exceeds threshold
@@ -40,7 +41,7 @@ python bot.py
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DISCORD_TOKEN` | Yes | Your Discord bot token |
-| `OPENROUTER_API_KEY` | No | Enables `/roastme` AI features |
+| `OPENROUTER_API_KEY` | No | Enables `/roastme` and weekly RSS summaries |
 | `HUMOR_API_KEY` | No | Enables `/meme` command |
 | `DATABASE_PATH` | No | SQLite path (default: `sattbot.db`) |
 | `LOG_LEVEL` | No | Logging level (default: `INFO`) |
@@ -51,6 +52,7 @@ python bot.py
 - `/config` — View or change individual settings
 - `/permissions` — Grant/revoke role access to commands
 - `/permissions-view` — See current permission settings
+- `/rss-channel #channel` — Set which channel receives the weekly RSS summary
 
 ## Permission System
 
@@ -64,8 +66,8 @@ Three layers of access control:
 
 | Command | Default |
 |---------|---------|
-| `/help`, `/ping`, `/meme`, `/roastme`, `/topchatter` | public |
-| `/inactive`, `/nuke` | admin_only |
+| `/help`, `/ping`, `/meme`, `/roastme`, `/topchatter`, `/weeklysummary` | public |
+| `/inactive`, `/nuke`, `/rss-channel`, `/rss-fetch` | admin_only |
 
 ### Example
 
@@ -73,6 +75,34 @@ Three layers of access control:
 /permissions command:inactive action:Grant role:@Mods
 → Now only @Mods and admins can use /inactive
 ```
+
+## Weekly RSS Summary
+
+SattBot can pull the daily tech brief from [Metacurate.io](https://metacurate.io/) and generate a weekly AI-powered summary posted to a channel of your choice.
+
+### How it works
+
+1. **Daily fetch** — A background task runs every 24 hours and downloads articles from the [Metacurate RSS feed](https://metacurate.io/briefs/daily/latest/rss). Articles are stored in the database per guild.
+2. **Weekly summary** — Every 7 days the bot sends the stored articles to OpenRouter, which generates a concise digest and posts it as an embed in the configured channel.
+3. **Cleanup** — Articles older than 30 days are automatically deleted.
+
+### RSS Commands
+
+| Command | Access | Description |
+|---------|--------|-------------|
+| `/rss-channel [#channel]` | Admin | Set or view the channel that receives weekly summaries |
+| `/rss-fetch` | Admin | Manually trigger an RSS fetch (useful for testing) |
+| `/weeklysummary` | Public | Get this week's summary on demand |
+
+### Setup
+
+```
+/rss-channel #news
+```
+
+That's it. The bot will start collecting articles and post its first summary after 7 days (or use `/weeklysummary` any time to get one immediately).
+
+> **Note:** The `OPENROUTER_API_KEY` environment variable is required for AI summaries. Without it the bot falls back to posting a plain list of article links.
 
 ## Project Structure
 

@@ -62,6 +62,7 @@ class General(commands.Cog):
             "config": "Change server settings (Admin)",
             "weeklysummary": "Get this week's RSS news summary",
             "rss-channel": "Set the channel for weekly summaries (Admin)",
+            "rss-fetch": "Manually fetch the RSS feed now (Admin)",
         }
 
         # Always show admin commands to admins
