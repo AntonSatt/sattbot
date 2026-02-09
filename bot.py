@@ -17,6 +17,7 @@ EXTENSIONS = [
     "cogs.activity",
     "cogs.admin",
     "cogs.listeners",
+    "cogs.rss",
 ]
 
 

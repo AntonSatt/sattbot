@@ -60,6 +60,8 @@ class General(commands.Cog):
             "permissions": "Manage command permissions (Admin)",
             "permissions-view": "View current permissions (Admin)",
             "config": "Change server settings (Admin)",
+            "weeklysummary": "Get this week's RSS news summary",
+            "rss-channel": "Set the channel for weekly summaries (Admin)",
         }
 
         # Always show admin commands to admins
