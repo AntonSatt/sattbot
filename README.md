@@ -13,6 +13,14 @@ A modular Discord bot with per-server configurable permissions, slash commands, 
 - **Random memes** — via HumorAPI
 - **Moderation** — scan for inactive members, bulk kick with confirmation
 
+## Inviting the Bot
+
+Generate an invite link with these permissions: **Send Messages**, **Embed Links**, **Read Message History**, **Kick Members**, **Moderate Members** (for timeouts). Permission integer: `1101927424064`.
+
+## Invite Link
+
+[Invite SattBot to your server](https://discord.com/api/oauth2/authorize?client_id=1421000801098141817&permissions=1101927424064&scope=bot%20applications.commands)
+
 ## Quick Start
 
 ### Docker (recommended)

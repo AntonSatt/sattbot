@@ -1,0 +1,46 @@
+name: Deploy to Droplet
+
+on:
+  push:
+    branches: [ main, develop ]
+
+jobs:
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'  # Only run on main pushes
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Deploy Prod via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: root
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 33342
+        script: |
+          cd /root/devopsuser/bot-app/sattbot
+          git switch main
+          git pull origin main
+          source venv/bin/activate
+          pip install -r requirements.txt --upgrade
+          systemctl restart discord-bot
+
+  deploy-test:
+    if: github.ref == 'refs/heads/develop'  # Only run on develop pushes
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Deploy Test via SSH
+      uses: appleboy/ssh-action@v1.0.0
+      with:
+        host: ${{ secrets.DROPLET_HOST }}
+        username: root
+        key: ${{ secrets.SSH_PRIVATE_KEY }}
+        port: 33342
+        script: |
+          cd /root/devopsuser/bot-app/test_sattbot
+          git switch develop
+          git pull origin develop
+          source venv/bin/activate
+          pip install -r requirements.txt --upgrade
+          systemctl restart discord-bot-test  # Note: Use a test service name!
