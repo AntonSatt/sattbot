@@ -19,7 +19,7 @@ HUMOR_API_URL = "https://api.humorapi.com/memes/random"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Default AI model
-DEFAULT_AI_MODEL = "meta-llama/llama-3.3-70b-instruct"
+DEFAULT_AI_MODEL = "google/gemini-2.5-flash"
 
 # Default moderation settings
 DEFAULT_SPAM_MAX_MSGS = 10
