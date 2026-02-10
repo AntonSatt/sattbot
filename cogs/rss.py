@@ -109,12 +109,13 @@ class RSS(commands.Cog):
             lines = [f"- [{it['title']}]({it['link']})" for it in items[:15]]
             summary = "\n".join(lines)
 
+        credit = "\n\n*Source: [Metacurate.io](https://metacurate.io/) — [Read more here](https://metacurate.io/)*"
         embed = discord.Embed(
             title="Weekly News Summary",
-            description=summary,
+            description=summary + credit,
             color=discord.Color.blue(),
         )
-        embed.set_footer(text=f"Based on {len(items)} articles from this week")
+        embed.set_footer(text=f"Based on {len(items)} articles from this week · Powered by Metacurate.io")
 
         try:
             await channel.send(embed=embed)
@@ -229,12 +230,13 @@ class RSS(commands.Cog):
             lines = [f"- [{it['title']}]({it['link']})" for it in items[:15]]
             summary = "\n".join(lines)
 
+        credit = "\n\n*Source: [Metacurate.io](https://metacurate.io/) — [Read more here](https://metacurate.io/)*"
         embed = discord.Embed(
             title="Weekly News Summary",
-            description=summary,
+            description=summary + credit,
             color=discord.Color.blue(),
         )
-        embed.set_footer(text=f"Based on {len(items)} articles from this week")
+        embed.set_footer(text=f"Based on {len(items)} articles from this week · Powered by Metacurate.io")
         await interaction.followup.send(embed=embed)
 
 
