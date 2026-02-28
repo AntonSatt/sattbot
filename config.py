@@ -27,8 +27,9 @@ DEFAULT_SPAM_MUTE_SECS = 60
 DEFAULT_SCAN_LIMIT = 1000
 DEFAULT_NUKE_DAYS = 60
 
-# RSS feed
+# RSS feeds
 METACURATE_RSS_URL = "https://metacurate.io/briefs/daily/latest/rss"
+METACURATE_QOTD_URL = "https://metacurate.io/qotd/rss"
 
 # Command default access levels
 DEFAULT_COMMAND_ACCESS = {
@@ -39,7 +40,9 @@ DEFAULT_COMMAND_ACCESS = {
     "topchatter": "public",
     "inactive": "admin_only",
     "nuke": "admin_only",
-    "weeklysummary": "public",
+    "dailynews": "public",
+    "qotd": "public",
+    "qotd-channel": "admin_only",
     "rss-channel": "admin_only",
     "rss-fetch": "admin_only",
 }

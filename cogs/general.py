@@ -60,9 +60,11 @@ class General(commands.Cog):
             "permissions": "Manage command permissions (Admin)",
             "permissions-view": "View current permissions (Admin)",
             "config": "Change server settings (Admin)",
-            "weeklysummary": "Get this week's RSS news summary",
-            "rss-channel": "Set the channel for weekly summaries (Admin)",
-            "rss-fetch": "Manually fetch the RSS feed now (Admin)",
+            "dailynews": "Get today's AI & tech news",
+            "rss-channel": "Set the channel for daily news (Admin)",
+            "rss-fetch": "Manually fetch and post today's news (Admin)",
+            "qotd": "Post today's Question of the Day as a poll",
+            "qotd-channel": "Set the channel for QOTD posts (Admin)",
         }
 
         # Always show admin commands to admins

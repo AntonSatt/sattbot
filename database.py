@@ -215,23 +215,86 @@ class Database:
         await self.db.commit()
         return count
 
-    async def get_weekly_rss_items(self, guild_id: int) -> list[dict]:
-        """Return RSS items fetched in the last 7 days for a guild."""
+    async def delete_old_rss_items(self, days: int = 30) -> int:
+        """Delete RSS items older than the given number of days. Returns count."""
+        cur = await self.db.execute(
+            "DELETE FROM rss_feed_items WHERE fetched_at < datetime('now', ?)",
+            (f"-{days} days",),
+        )
+        await self.db.commit()
+        return cur.rowcount
+
+    # ── Question of the Day ──────────────────────────────────────────
+
+    async def get_qotd_channel(self, guild_id: int) -> int | None:
         async with self.db.execute(
-            "SELECT title, link, description, published_at, fetched_at "
-            "FROM rss_feed_items "
-            "WHERE guild_id = ? AND fetched_at >= datetime('now', '-7 days') "
-            "ORDER BY fetched_at DESC",
+            "SELECT qotd_channel_id FROM qotd_guild_config WHERE guild_id = ?",
             (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if row is None:
+                return None
+            return row[0]
+
+    async def set_qotd_channel(self, guild_id: int, channel_id: int | None) -> None:
+        await self.db.execute(
+            "INSERT INTO qotd_guild_config (guild_id, qotd_channel_id) "
+            "VALUES (?, ?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET qotd_channel_id = excluded.qotd_channel_id",
+            (guild_id, channel_id),
+        )
+        await self.db.commit()
+
+    async def get_qotd_guilds(self) -> list[tuple[int, int]]:
+        """Return all (guild_id, qotd_channel_id) pairs with a configured channel."""
+        async with self.db.execute(
+            "SELECT guild_id, qotd_channel_id FROM qotd_guild_config "
+            "WHERE qotd_channel_id IS NOT NULL",
+        ) as cur:
+            return await cur.fetchall()
+
+    async def save_qotd_poll(
+        self,
+        guild_id: int,
+        channel_id: int,
+        message_id: int,
+        question: str,
+        answer_data: str,
+        reveal_at: str,
+    ) -> None:
+        """Save an active QOTD poll for later answer reveal."""
+        await self.db.execute(
+            "INSERT INTO qotd_active_polls "
+            "(guild_id, channel_id, message_id, question, answer_data, reveal_at) "
+            "VALUES (?, ?, ?, ?, ?, ?)",
+            (guild_id, channel_id, message_id, question, answer_data, reveal_at),
+        )
+        await self.db.commit()
+
+    async def get_pending_qotd_reveals(self) -> list[dict]:
+        """Return all polls whose reveal_at has passed and haven't been revealed yet."""
+        async with self.db.execute(
+            "SELECT id, guild_id, channel_id, message_id, question, answer_data "
+            "FROM qotd_active_polls "
+            "WHERE revealed = 0 AND reveal_at <= datetime('now')",
         ) as cur:
             rows = await cur.fetchall()
             cols = [d[0] for d in cur.description]
             return [dict(zip(cols, row)) for row in rows]
 
-    async def delete_old_rss_items(self, days: int = 30) -> int:
-        """Delete RSS items older than the given number of days. Returns count."""
+    async def mark_qotd_revealed(self, poll_id: int) -> None:
+        """Mark a QOTD poll as revealed."""
+        await self.db.execute(
+            "UPDATE qotd_active_polls SET revealed = 1 WHERE id = ?",
+            (poll_id,),
+        )
+        await self.db.commit()
+
+    async def cleanup_old_qotd_polls(self, days: int = 7) -> int:
+        """Delete old revealed polls. Returns count deleted."""
         cur = await self.db.execute(
-            "DELETE FROM rss_feed_items WHERE fetched_at < datetime('now', ?)",
+            "DELETE FROM qotd_active_polls "
+            "WHERE revealed = 1 AND created_at < datetime('now', ?)",
             (f"-{days} days",),
         )
         await self.db.commit()
