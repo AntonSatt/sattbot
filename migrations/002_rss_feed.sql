@@ -1,4 +1,4 @@
--- RSS feed storage for weekly summaries
+-- RSS feed storage for daily news
 
 CREATE TABLE IF NOT EXISTS rss_guild_config (
     guild_id INTEGER PRIMARY KEY,

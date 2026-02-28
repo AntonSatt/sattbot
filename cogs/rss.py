@@ -1,7 +1,8 @@
 import json
 import logging
 import re
-from datetime import datetime, timedelta, timezone
+import zoneinfo
+from datetime import datetime, time, timedelta, timezone
 
 import aiohttp
 import discord
@@ -18,6 +19,10 @@ _TAG_RE = re.compile(r"<[^>]+>")
 
 # How long the QOTD poll stays open before the answer is revealed
 QOTD_POLL_HOURS = 8
+
+# Schedule: daily posts at 08:00 Stockholm time
+_STOCKHOLM = zoneinfo.ZoneInfo("Europe/Stockholm")
+_DAILY_POST_TIME = time(hour=8, minute=0, tzinfo=_STOCKHOLM)
 
 
 def _strip_html(text: str) -> str:
@@ -252,6 +257,37 @@ def _extract_question(item: dict) -> str:
     return title
 
 
+def _extract_qotd_context(item: dict) -> str:
+    """Extract a spoiler-free context paragraph from a QOTD feed item.
+
+    Returns the first explanation paragraph (skipping the bold TL;DR answer).
+    """
+    description = item.get("description", "")
+    answer_bold = ""
+
+    for line in description.split("\n"):
+        stripped = _strip_html(line).strip()
+        if not stripped:
+            continue
+
+        # The bold answer is in a <p><strong>...</strong></p> at the top — skip it
+        if "<strong>" in line and not answer_bold and "Sources" not in stripped:
+            answer_bold = _strip_html(line).strip()
+            continue
+
+        if "Sources:" in stripped or "Read on metacurate.io" in stripped:
+            break
+
+        if "<p>" in line:
+            para = _strip_html(line).strip()
+            if para and para != answer_bold:
+                if len(para) > 300:
+                    para = para[:297] + "..."
+                return para
+
+    return ""
+
+
 class RSS(commands.Cog):
     """Fetches and posts daily AI & tech news and Question of the Day from Metacurate.io."""
 
@@ -276,7 +312,7 @@ class RSS(commands.Cog):
 
     # -- Background tasks -----------------------------------------------------
 
-    @tasks.loop(hours=24)
+    @tasks.loop(time=_DAILY_POST_TIME)
     async def daily_post(self) -> None:
         """Fetch today's RSS feed and post it to all configured guilds."""
         await self.bot.wait_until_ready()
@@ -299,7 +335,7 @@ class RSS(commands.Cog):
     async def before_daily_post(self) -> None:
         await self.bot.wait_until_ready()
 
-    @tasks.loop(hours=24)
+    @tasks.loop(time=_DAILY_POST_TIME)
     async def daily_qotd(self) -> None:
         """Fetch today's QOTD and post it as a poll to all configured guilds."""
         await self.bot.wait_until_ready()
@@ -406,6 +442,19 @@ class RSS(commands.Cog):
 
         item = items[0]
         question = _extract_question(item)
+        link = item.get("link", "")
+
+        # Extract a spoiler-free context paragraph from the feed description
+        context = _extract_qotd_context(item)
+
+        # Build the content text above the poll
+        lines = ["**Question of the Day** \U00002753"]  # ❓
+        if context:
+            lines.append(f"\n> {context}")
+        if link:
+            lines.append(f"\n[Read more on Metacurate.io]({link})")
+        lines.append(f"\n*Answer will be revealed in {QOTD_POLL_HOURS} hours!*")
+        content = "\n".join(lines)
 
         # Build a Discord poll with fixed answer choices
         poll = discord.Poll(
@@ -418,7 +467,7 @@ class RSS(commands.Cog):
 
         try:
             msg = await channel.send(
-                content="**Question of the Day** \U00002753",  # ❓
+                content=content,
                 poll=poll,
             )
             log.info("QOTD: posted poll to guild %d (msg %d)", guild_id, msg.id)

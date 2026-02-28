@@ -5,8 +5,8 @@ A modular Discord bot with per-server configurable permissions, slash commands, 
 ## Features
 
 - **Slash commands** — `/ping`, `/help`, `/meme`, `/roastme`, `/topchatter`, `/inactive`, `/nuke`
-- **Daily AI & tech news** — posts the latest brief from [Metacurate.io](https://metacurate.io/briefs/daily/latest/rss) as pretty embeds
-- **Question of the Day** — posts a daily QOTD as a native Discord poll, then reveals the answer after 8 hours
+- **Daily AI & tech news** — posts the latest brief from [Metacurate.io](https://metacurate.io/briefs/daily/latest/rss) as pretty embeds every day at 08:00 CET
+- **Question of the Day** — posts a daily QOTD as a native Discord poll at 08:00 CET with context, then reveals the answer 8 hours later
 - **Per-server permissions** — 3-tier system (public / admin-only / restricted by role)
 - **Interactive setup wizard** — `/setup` walks admins through configuration
 - **Anti-spam** — automatic muting when message rate exceeds threshold
@@ -92,8 +92,10 @@ SattBot posts a daily tech brief from [Metacurate.io](https://metacurate.io/) as
 
 ### How it works
 
-1. **Daily post** — A background task runs every 24 hours, fetches the latest brief from the [Metacurate RSS feed](https://metacurate.io/briefs/daily/latest/rss), and posts it as an embed in the configured channel.
+1. **Scheduled post** — Every day at **08:00 CET** (Stockholm time), the bot fetches the latest brief from the [Metacurate RSS feed](https://metacurate.io/briefs/daily/latest/rss) and posts it as an embed in the configured channel.
 2. **Cleanup** — Articles older than 30 days are automatically deleted from the database.
+
+No AI processing or API keys are required — the feed content is formatted directly into Discord embeds.
 
 ### News Commands
 
@@ -109,17 +111,17 @@ SattBot posts a daily tech brief from [Metacurate.io](https://metacurate.io/) as
 /rss-channel #news
 ```
 
-The bot will start posting the daily brief automatically. Use `/dailynews` or `/rss-fetch` to test immediately.
+The bot will start posting the daily brief at 08:00 CET. Use `/dailynews` or `/rss-fetch` to test immediately.
 
 ## Question of the Day
 
-SattBot posts a daily Question of the Day from [Metacurate.io](https://metacurate.io/qotd/rss) as a native Discord poll. Users vote, and the detailed answer is revealed automatically after 8 hours.
+SattBot posts a daily Question of the Day from [Metacurate.io](https://metacurate.io/qotd/rss) as a native Discord poll with topic context. Users vote, and the detailed answer is revealed automatically 8 hours later.
 
 ### How it works
 
-1. **Poll posted** — Each day the bot fetches the latest QOTD and posts it as a Discord poll with three choices: **Yes**, **No**, and **It's Complicated**.
-2. **Users vote** — Members vote using Discord's native poll UI.
-3. **Answer revealed** — After 8 hours the bot replies to the poll with the full answer embed, including a TL;DR, detailed explanation, and source links.
+1. **Poll posted at 08:00 CET** — The bot fetches the latest QOTD and posts it as a Discord poll with three choices: **Yes**, **No**, and **It's Complicated**. A context paragraph and source link are included above the poll so users understand the topic.
+2. **Users vote** — Members vote using Discord's native poll UI for 8 hours.
+3. **Answer revealed at 16:00 CET** — The bot replies to the original poll with the full answer embed, including a TL;DR, detailed explanation, and source links.
 4. **Cleanup** — Revealed polls older than 7 days are cleaned up automatically.
 
 ### QOTD Commands
@@ -135,7 +137,7 @@ SattBot posts a daily Question of the Day from [Metacurate.io](https://metacurat
 /qotd-channel #trivia
 ```
 
-The bot will start posting daily polls automatically. Use `/qotd` to test immediately.
+The bot will start posting daily polls at 08:00 CET. Use `/qotd` to test immediately.
 
 ## Project Structure
 
