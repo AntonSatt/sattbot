@@ -1,0 +1,78 @@
+name: Build and publish image
+
+# Builds an ARM64 image for the k3s node and publishes it to GHCR with an
+# immutable commit tag. Deploying is a separate, reviewed change: bump the tag
+# in the infrastructure repository's sattbot manifest.
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - "README.md"
+      - "docker-compose.yml"
+      - ".env.example"
+  workflow_dispatch:
+
+concurrency:
+  group: sattbot-image
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  IMAGE_NAME: ghcr.io/antonsatt/sattbot
+
+jobs:
+  build-and-publish:
+    name: Build, smoke-test and publish
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 20
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v6
+
+      - name: Build ARM64 image
+        run: |
+          set -euo pipefail
+          docker build --pull \
+            --label "org.opencontainers.image.source=https://github.com/${GITHUB_REPOSITORY}" \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "${IMAGE_NAME}:${GITHUB_SHA}" \
+            .
+
+      - name: Smoke-test image
+        run: |
+          set -euo pipefail
+          # Runs as the image's own user, without a Discord token: every module
+          # must import, and the migrations must apply twice to the same
+          # database in /app/data, as they do on every restart with a volume.
+          docker run --rm "${IMAGE_NAME}:${GITHUB_SHA}" python -c '
+          import asyncio, os, sqlite3
+          import bot, config
+          from database import Database
+          assert os.getuid() != 0, "runs as root"
+          assert config.DATABASE_PATH == "/app/data/sattbot.db", config.DATABASE_PATH
+          async def run():
+              for _ in range(2):
+                  db = Database(config.DATABASE_PATH)
+                  await db.connect()
+                  await db.close()
+          asyncio.run(run())
+          tables = {r[0] for r in sqlite3.connect(config.DATABASE_PATH).execute("select name from sqlite_master where type = \"table\"")}
+          assert {"guild_settings", "rss_guild_config", "qotd_guild_config"} <= tables, tables
+          print("smoke test ok:", sorted(tables))
+          '
+
+      - name: Log in to GHCR
+        run: |
+          printf '%s' "${{ secrets.GITHUB_TOKEN }}" | \
+            docker login ghcr.io --username "${GITHUB_ACTOR}" --password-stdin
+
+      - name: Publish immutable tag
+        run: |
+          docker push "${IMAGE_NAME}:${GITHUB_SHA}"
+          echo "Published ${IMAGE_NAME}:${GITHUB_SHA}" >> "${GITHUB_STEP_SUMMARY}"
