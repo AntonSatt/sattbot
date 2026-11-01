@@ -52,7 +52,7 @@ python bot.py
 | `DISCORD_TOKEN` | Yes | Your Discord bot token |
 | `OPENROUTER_API_KEY` | No | Enables `/roastme` |
 | `HUMOR_API_KEY` | No | Enables `/meme` command |
-| `DATABASE_PATH` | No | SQLite path (default: `sattbot.db`) |
+| `DATABASE_PATH` | No | SQLite path (default: `sattbot.db`; the Docker image uses `/app/data/sattbot.db`, which must be a persistent volume) |
 | `LOG_LEVEL` | No | Logging level (default: `INFO`) |
 
 ### In-Server Configuration
