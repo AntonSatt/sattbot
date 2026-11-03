@@ -4,15 +4,15 @@ A modular Discord bot with per-server configurable permissions, slash commands, 
 
 ## Features
 
-- **Slash commands** — `/ping`, `/help`, `/meme`, `/roastme`, `/topchatter`, `/inactive`, `/nuke`
+- **Slash commands** — `/ping`, `/help`, `/meme`, `/roastme`, `/topchatter`, `/inactive`, `/nuke`, `/rolepurge`
 - **Daily AI & tech news** — posts the latest brief from [Metacurate.io](https://metacurate.io/briefs/daily/latest/rss) as pretty embeds every day at 08:00 CET
 - **Question of the Day** — posts a daily QOTD as a native Discord poll at 08:00 CET with context, then reveals the answer 8 hours later
 - **Per-server permissions** — 3-tier system (public / admin-only / restricted by role)
 - **Interactive setup wizard** — `/setup` walks admins through configuration
 - **Anti-spam** — automatic muting when message rate exceeds threshold
-- **AI roasts** — powered by OpenRouter (configurable model)
+- **AI roasts** — powered by OpenRouter (default `openai/gpt-6-luna`, change per server with `/config ai_model`)
 - **Random memes** — via HumorAPI
-- **Moderation** — scan for inactive members, bulk kick with confirmation
+- **Moderation** — scan for inactive members, bulk kick with confirmation, or kick everyone without the roles you pick ([Role Purge](#role-purge))
 
 ## Inviting the Bot
 
@@ -50,8 +50,8 @@ python bot.py
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DISCORD_TOKEN` | Yes | Your Discord bot token |
-| `OPENROUTER_API_KEY` | No | Enables `/roastme` |
-| `HUMOR_API_KEY` | No | Enables `/meme` command |
+| `OPENROUTER_API_KEY` | No | Enables `/roastme` and AI captions in kick reports |
+| `HUMOR_API_KEY` | No | Enables `/meme` command and GIFs in kick reports |
 | `DATABASE_PATH` | No | SQLite path (default: `sattbot.db`; the Docker image uses `/app/data/sattbot.db`, which must be a persistent volume) |
 | `LOG_LEVEL` | No | Logging level (default: `INFO`) |
 
@@ -63,6 +63,7 @@ python bot.py
 - `/permissions-view` — See current permission settings
 - `/rss-channel #channel` — Set which channel receives the daily news
 - `/qotd-channel #channel` — Set which channel receives the Question of the Day poll
+- `/modlog-channel #channel`: Set which channel receives [kick reports](#kick-reports) from `/nuke` and `/rolepurge`
 
 ## Permission System
 
@@ -77,7 +78,7 @@ Three layers of access control:
 | Command | Default |
 |---------|---------|
 | `/help`, `/ping`, `/meme`, `/roastme`, `/topchatter`, `/dailynews`, `/qotd` | public |
-| `/inactive`, `/nuke`, `/rss-channel`, `/rss-fetch`, `/qotd-channel` | admin_only |
+| `/inactive`, `/nuke`, `/rolepurge`, `/modlog-channel`, `/rss-channel`, `/rss-fetch`, `/qotd-channel` | admin_only |
 
 ### Example
 
@@ -85,6 +86,33 @@ Three layers of access control:
 /permissions command:inactive action:Grant role:@Mods
 → Now only @Mods and admins can use /inactive
 ```
+
+## Role Purge
+
+`/rolepurge` kicks every member who has none of the roles you pick, for example everyone who hasn't chosen a class role yet.
+
+1. Run `/rolepurge` and pick the roles that let a member stay (up to 25).
+2. The bot lists everyone who would be kicked and attaches the full list as `rolepurge.txt`. Bots, admins, the server owner, you, and members who joined within `grace_days` are never on it.
+3. Nothing happens until you press **Confirm Role Purge**. Each member then gets a DM just before the kick; closed DMs don't stop the kick.
+
+| Option | Description |
+|--------|-------------|
+| `grace_days` | Skip members who joined within this many days (0-365, default 7) |
+| `message` | Text of the DM (default: a short notice in English) |
+| `invite` | Invite link added at the end of the DM |
+
+The bot can only kick members whose highest role is below its own, so keep the bot's role above the roles those members hold. The preview counts anyone it can't kick.
+
+## Kick Reports
+
+When a `/nuke` or `/rolepurge` kicks anyone, the bot posts a report in the channel set with `/modlog-channel`, typically a channel only admins can see:
+
+- a meme caption written by AI (OpenRouter, the same model as `/roastme`), which never names the people removed
+- a fitting GIF from HumorAPI
+- how many were kicked, how many failed, how many got the DM, and who ran the command
+- the full list of kicked members as an attachment
+
+Without API keys, or if an API doesn't answer, the report uses a built-in caption and skips the GIF. Without a configured channel nothing is posted.
 
 ## Daily AI & Tech News
 

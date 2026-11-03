@@ -63,7 +63,7 @@ jobs:
                   await db.close()
           asyncio.run(run())
           tables = {r[0] for r in sqlite3.connect(config.DATABASE_PATH).execute("select name from sqlite_master where type = \"table\"")}
-          assert {"guild_settings", "rss_guild_config", "qotd_guild_config"} <= tables, tables
+          assert {"guild_settings", "rss_guild_config", "qotd_guild_config", "modlog_guild_config"} <= tables, tables
           print("smoke test ok:", sorted(tables))
           '
 

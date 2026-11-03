@@ -8,6 +8,7 @@ from discord.ext import commands
 from checks import has_command_permission
 from utils.formatting import format_member_list, make_embed
 from views.nuke_confirm import NukeConfirmView
+from views.role_purge import RolePurgeView
 
 log = logging.getLogger(__name__)
 
@@ -110,6 +111,82 @@ class Moderation(commands.Cog):
 
         view = NukeConfirmView(interaction.user, inactive_members)
         await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+
+    @app_commands.command(
+        name="rolepurge",
+        description="Kick members who have none of the roles you pick",
+    )
+    @app_commands.describe(
+        grace_days="Skip members who joined within this many days (default: 7)",
+        message="DM sent before the kick (default: a short notice in English)",
+        invite="Invite link added at the end of the DM",
+    )
+    @app_commands.default_permissions(kick_members=True)
+    @app_commands.checks.cooldown(1, 30.0)
+    @has_command_permission("rolepurge")
+    async def rolepurge(
+        self,
+        interaction: discord.Interaction,
+        grace_days: app_commands.Range[int, 0, 365] = 7,
+        message: app_commands.Range[str, 1, 1500] | None = None,
+        invite: app_commands.Range[str, 1, 200] | None = None,
+    ) -> None:
+        if not interaction.guild.me.guild_permissions.kick_members:
+            await interaction.response.send_message(
+                "I need the Kick Members permission for this.", ephemeral=True
+            )
+            return
+
+        dm_text = message or (
+            f"You've been removed from **{interaction.guild.name}** in a clean-up "
+            "of members without a role. You're welcome back any time."
+        )
+        if invite:
+            dm_text += f"\n{invite}"
+
+        view = RolePurgeView(interaction.user, grace_days, dm_text)
+        await interaction.response.send_message(
+            "Pick the roles that let a member stay. Everyone with none of them "
+            "ends up on the list, and nobody is kicked until you confirm.",
+            view=view,
+            ephemeral=True,
+        )
+
+    @app_commands.command(
+        name="modlog-channel",
+        description="Set or view the channel where /nuke and /rolepurge report",
+    )
+    @app_commands.default_permissions(administrator=True)
+    @app_commands.describe(channel="The channel for kick reports (omit to view current)")
+    @has_command_permission("modlog-channel")
+    async def modlog_channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel | None = None,
+    ) -> None:
+        guild_id = interaction.guild_id
+        await self.bot.db.ensure_guild(guild_id)
+
+        if channel is None:
+            current = await self.bot.db.get_modlog_channel(guild_id)
+            if current is None:
+                await interaction.response.send_message(
+                    "No moderation log channel configured. "
+                    "Use `/modlog-channel #channel` to set one.",
+                    ephemeral=True,
+                )
+            else:
+                await interaction.response.send_message(
+                    f"Kick reports are posted to <#{current}>.",
+                    ephemeral=True,
+                )
+            return
+
+        await self.bot.db.set_modlog_channel(guild_id, channel.id)
+        await interaction.response.send_message(
+            f"Kick reports from /nuke and /rolepurge will now be posted to {channel.mention}.",
+            ephemeral=True,
+        )
 
 
 async def setup(bot: commands.Bot) -> None:

@@ -1,4 +1,5 @@
 import logging
+import random
 import xml.etree.ElementTree as ET
 
 import aiohttp
@@ -35,6 +36,7 @@ async def ai_roast(
     model = model or config.DEFAULT_AI_MODEL
     payload = {
         "model": model,
+        "reasoning": {"effort": "low"},
         "messages": [
             {
                 "role": "system",
@@ -60,6 +62,75 @@ async def ai_roast(
             if resp.status == 200:
                 data = await resp.json()
                 return data["choices"][0]["message"]["content"]
+            log.warning("OpenRouter returned status %d", resp.status)
+            return None
+    except Exception:
+        log.exception("OpenRouter request failed")
+        return None
+
+
+async def fetch_gif(session: aiohttp.ClientSession, query: str) -> str | None:
+    """Search HumorAPI for a GIF and return the URL of a random hit, or None."""
+    if not config.HUMOR_API_KEY:
+        return None
+    params = {"api-key": config.HUMOR_API_KEY, "query": query, "number": 5}
+    try:
+        async with session.get(config.HUMOR_GIF_URL, params=params) as resp:
+            if resp.status == 200:
+                images = (await resp.json()).get("images") or []
+                return random.choice(images)["url"] if images else None
+            log.warning("HumorAPI GIF search returned status %d", resp.status)
+            return None
+    except Exception:
+        log.exception("HumorAPI GIF search failed")
+        return None
+
+
+async def ai_kick_caption(
+    session: aiohttp.ClientSession,
+    action: str,
+    count: int,
+    reason: str,
+    model: str | None = None,
+) -> str | None:
+    """Get a meme-style caption for a mass kick from OpenRouter. Returns the text or None."""
+    if not config.OPENROUTER_API_KEY:
+        return None
+    model = model or config.DEFAULT_AI_MODEL
+    payload = {
+        "model": model,
+        # Reasoning models spend part of max_tokens thinking: keep it low, cap generously
+        "reasoning": {"effort": "low"},
+        "max_tokens": 1000,
+        "messages": [
+            {
+                "role": "system",
+                "content": (
+                    "You write one short, funny meme caption for a Discord server's "
+                    "moderator log. Playful, never mean towards the people removed, "
+                    "no names, no hashtags, at most 25 words."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    f"A moderator just ran {action} and kicked {count} members. "
+                    f"Reason: {reason}. Write the caption."
+                ),
+            },
+        ],
+    }
+    headers = {
+        "Authorization": f"Bearer {config.OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
+    try:
+        async with session.post(
+            config.OPENROUTER_API_URL, json=payload, headers=headers
+        ) as resp:
+            if resp.status == 200:
+                data = await resp.json()
+                return data["choices"][0]["message"]["content"].strip().strip('"')
             log.warning("OpenRouter returned status %d", resp.status)
             return None
     except Exception:
