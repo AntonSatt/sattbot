@@ -56,6 +56,8 @@ class General(commands.Cog):
             "topchatter": "See the most active chatters",
             "inactive": "List inactive members",
             "nuke": "Remove inactive members",
+            "rolepurge": "Remove members without any of the roles you pick",
+            "modlog-channel": "Set the channel for kick reports (Admin)",
             "setup": "Run the setup wizard (Admin)",
             "permissions": "Manage command permissions (Admin)",
             "permissions-view": "View current permissions (Admin)",

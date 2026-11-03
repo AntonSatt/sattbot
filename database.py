@@ -3,7 +3,7 @@ import pathlib
 
 import aiosqlite
 
-from config import DEFAULT_COMMAND_ACCESS
+from config import DEFAULT_AI_MODEL, DEFAULT_COMMAND_ACCESS
 
 log = logging.getLogger(__name__)
 
@@ -36,9 +36,10 @@ class Database:
 
     async def ensure_guild(self, guild_id: int) -> None:
         """Insert default guild settings and command defaults if missing."""
+        # Explicit model: tables created before 005 keep the old column default
         await self.db.execute(
-            "INSERT OR IGNORE INTO guild_settings (guild_id) VALUES (?)",
-            (guild_id,),
+            "INSERT OR IGNORE INTO guild_settings (guild_id, ai_model) VALUES (?, ?)",
+            (guild_id, DEFAULT_AI_MODEL),
         )
         for cmd, access in DEFAULT_COMMAND_ACCESS.items():
             await self.db.execute(
@@ -223,6 +224,27 @@ class Database:
         )
         await self.db.commit()
         return cur.rowcount
+
+    # ── Moderation log ───────────────────────────────────────────────
+
+    async def get_modlog_channel(self, guild_id: int) -> int | None:
+        async with self.db.execute(
+            "SELECT modlog_channel_id FROM modlog_guild_config WHERE guild_id = ?",
+            (guild_id,),
+        ) as cur:
+            row = await cur.fetchone()
+            if row is None:
+                return None
+            return row[0]
+
+    async def set_modlog_channel(self, guild_id: int, channel_id: int | None) -> None:
+        await self.db.execute(
+            "INSERT INTO modlog_guild_config (guild_id, modlog_channel_id) "
+            "VALUES (?, ?) "
+            "ON CONFLICT(guild_id) DO UPDATE SET modlog_channel_id = excluded.modlog_channel_id",
+            (guild_id, channel_id),
+        )
+        await self.db.commit()
 
     # ── Question of the Day ──────────────────────────────────────────
 

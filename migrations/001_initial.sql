@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS guild_settings (
     spam_mute_secs INTEGER NOT NULL DEFAULT 60,
     scan_limit INTEGER NOT NULL DEFAULT 1000,
     nuke_days INTEGER NOT NULL DEFAULT 60,
-    ai_model TEXT NOT NULL DEFAULT 'meta-llama/llama-3.3-70b-instruct',
+    ai_model TEXT NOT NULL DEFAULT 'openai/gpt-6-luna',
     setup_complete INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))

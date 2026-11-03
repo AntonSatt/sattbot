@@ -16,10 +16,11 @@ LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO")
 
 # API URLs
 HUMOR_API_URL = "https://api.humorapi.com/memes/random"
+HUMOR_GIF_URL = "https://api.humorapi.com/gif/search"
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Default AI model
-DEFAULT_AI_MODEL = "google/gemini-2.5-flash"
+DEFAULT_AI_MODEL = "openai/gpt-6-luna"
 
 # Default moderation settings
 DEFAULT_SPAM_MAX_MSGS = 10
@@ -40,6 +41,8 @@ DEFAULT_COMMAND_ACCESS = {
     "topchatter": "public",
     "inactive": "admin_only",
     "nuke": "admin_only",
+    "rolepurge": "admin_only",
+    "modlog-channel": "admin_only",
     "dailynews": "public",
     "qotd": "public",
     "qotd-channel": "admin_only",

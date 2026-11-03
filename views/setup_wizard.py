@@ -186,10 +186,10 @@ class ModerationStepView(discord.ui.View):
 # ── Step 4: AI config ───────────────────────────────────────────────
 
 AI_MODELS = [
-    ("Llama 3.3 70B (default)", "meta-llama/llama-3.3-70b-instruct"),
-    ("Llama 3.1 8B (fast)", "meta-llama/llama-3.1-8b-instruct"),
-    ("Mixtral 8x7B", "mistralai/mixtral-8x7b-instruct"),
-    ("Qwen 2.5 72B", "qwen/qwen-2.5-72b-instruct"),
+    ("GPT-6 Luna (default)", "openai/gpt-6-luna"),
+    ("GLM 5.3 Flash (cheapest)", "z-ai/glm-5.3-flash"),
+    ("Claude Haiku 5.5", "anthropic/claude-haiku-5.5"),
+    ("DeepSeek V4.1 Flash", "deepseek/deepseek-v4.1-flash"),
 ]
 
 
