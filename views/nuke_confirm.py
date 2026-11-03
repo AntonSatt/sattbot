@@ -16,7 +16,8 @@ class NukeConfirmView(discord.ui.View):
         reason: str = "Nuke: inactive",
         dm_text: str | None = None,
     ) -> None:
-        super().__init__(timeout=60)
+        # Long enough to read the list and its attachment before confirming
+        super().__init__(timeout=300)
         self.author = author
         self.targets = targets
         self.action = action
